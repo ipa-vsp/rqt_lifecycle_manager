@@ -51,7 +51,7 @@ class RosLifecycleManager(Plugin):
         self._widget.pushShutdownObj.clicked.connect(self._shutdown_lc_node)
         self._widget.pushCleanObj.clicked.connect(self._cleanup_lc_node)
 
-        # Initially disable all buttons except Refresh and Shutdown
+        # Initially disable some buttons
         self._widget.pushConfigureObj.setEnabled(False)
         self._widget.pushActivateObj.setEnabled(False)
         self._widget.pushDeactivateObj.setEnabled(False)
@@ -84,11 +84,11 @@ class RosLifecycleManager(Plugin):
             self._widget.lifecycleNodeList.setCurrentIndex(0)
             self._on_node_selection_changed(0)
 
-            # After refresh, only Configure enabled
+            # Force enable all control buttons after refresh
             self._widget.pushConfigureObj.setEnabled(True)
-            self._widget.pushActivateObj.setEnabled(False)
-            self._widget.pushDeactivateObj.setEnabled(False)
-            self._widget.pushCleanObj.setEnabled(False)
+            self._widget.pushActivateObj.setEnabled(True)
+            self._widget.pushDeactivateObj.setEnabled(True)
+            self._widget.pushCleanObj.setEnabled(True)
         else:
             # No nodes found – disable all control buttons
             self._widget.pushConfigureObj.setEnabled(False)
@@ -96,6 +96,8 @@ class RosLifecycleManager(Plugin):
             self._widget.pushDeactivateObj.setEnabled(False)
             self._widget.pushCleanObj.setEnabled(False)
             self.draw_state_machine()
+
+
 
     def get_selected_node(self):
         node_name = self._widget.lifecycleNodeList.currentText()
@@ -120,37 +122,11 @@ class RosLifecycleManager(Plugin):
             self._logger.info(f'Selected node {node_name} is in state: {state.label}')
             self.draw_state_machine(current_state=state.label, transition_state='success')
 
-            # Update buttons according to the node state and your logic:
-            if state.label == 'unconfigured':
-                # Only Configure enabled
-                self._widget.pushConfigureObj.setEnabled(True)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushDeactivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
-            elif state.label == 'configuring' or state.label == 'inactive':
-                # After configure: Clean Up and Activate enabled
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(True)
-                self._widget.pushCleanObj.setEnabled(True)
-                self._widget.pushDeactivateObj.setEnabled(False)
-            elif state.label == 'activating' or state.label == 'active':
-                # After activate: Deactivate enabled only
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushDeactivateObj.setEnabled(True)
-                self._widget.pushCleanObj.setEnabled(False)
-            elif state.label == 'deactivating' or state.label == 'finalized' or state.label == 'shuttingdown':
-                # Disable all buttons during transition or shutdown
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushDeactivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
-            else:
-                # Fallback - disable all
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushDeactivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
+            # Enable/disable buttons based on lifecycle state
+            self._widget.pushConfigureObj.setEnabled(state.label == 'unconfigured')
+            self._widget.pushActivateObj.setEnabled(state.label == 'inactive')
+            self._widget.pushDeactivateObj.setEnabled(state.label == 'active')
+            self._widget.pushCleanObj.setEnabled(state.label == 'inactive')
 
         else:
             # Disable buttons if no valid selection
@@ -169,11 +145,6 @@ class RosLifecycleManager(Plugin):
 
             if result:
                 self.draw_state_machine(state.label, 'success')
-                # Enable Clean Up and Activate after configure success
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(True)
-                self._widget.pushActivateObj.setEnabled(True)
-                self._widget.pushDeactivateObj.setEnabled(False)
             else:
                 self.draw_state_machine(state.label, 'failed')
 
@@ -187,11 +158,6 @@ class RosLifecycleManager(Plugin):
 
             if result:
                 self.draw_state_machine(state.label, 'success')
-                # Enable Deactivate after activate success
-                self._widget.pushDeactivateObj.setEnabled(True)
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
             else:
                 self.draw_state_machine(state.label, 'failed')
 
@@ -205,11 +171,6 @@ class RosLifecycleManager(Plugin):
 
             if result:
                 self.draw_state_machine(state.label, 'success')
-                # After deactivation, disable all buttons until next refresh
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushDeactivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
             else:
                 self.draw_state_machine(state.label, 'failed')
 
@@ -236,11 +197,6 @@ class RosLifecycleManager(Plugin):
 
             if result:
                 self.draw_state_machine(state.label, 'success')
-                # Enable Deactivate after cleanup success
-                self._widget.pushDeactivateObj.setEnabled(True)
-                self._widget.pushConfigureObj.setEnabled(False)
-                self._widget.pushActivateObj.setEnabled(False)
-                self._widget.pushCleanObj.setEnabled(False)
             else:
                 self.draw_state_machine(state.label, 'failed')
 
